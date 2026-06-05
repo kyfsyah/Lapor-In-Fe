@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/HeroSection";
 import HowItWorks from "@/components/landing/HowItWorks";
-import NewsSection from "@/components/landing/NewSection";
+import NewsSection from "@/components/landing/ReportSection";
 import CTASection from "@/components/landing/CTASection";
 
 export default function Home() {

@@ -8,7 +8,7 @@ const steps = [
       "Laporkan masalah infrastruktur atau fasilitas publik dengan detail lokasi dan foto pendukung.",
   },
   {
-    icon: <ShieldCheck size={28} className="text-emerald-500" />,
+    icon: <ShieldCheck size={28} className="text-blue-500" />,
     title: "Verifikasi Admin",
     description:
       "Laporan Anda akan diverifikasi oleh admin untuk memastikan validitas dan kejelasan masalah.",
@@ -52,7 +52,7 @@ export default function HowItWorks() {
               {/* Connection Line */}
               {i < steps.length - 1 && (
                 <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-[2px] bg-zinc-100 dark:bg-zinc-800 -z-10">
-                  <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-emerald-500 w-0 group-hover:w-full transition-all duration-700 ease-out" />
+                  <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-blue-500 w-0 group-hover:w-full transition-all duration-700 ease-out" />
                 </div>
               )}
 

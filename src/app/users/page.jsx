@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import NavbarUser from "@/components/users/NavbarUser";
 import Hero from "@/components/landing/HeroSection";
 import HowItWorks from "@/components/landing/HowItWorks";
-import NewsSection from "@/components/landing/NewSection";
-import CTASection from "@/components/landing/CTASection";
+import ReportSection from "@/components/landing/ReportSection";
+import { CreateReportSection } from "@/components/users/CreateReport";
 
 export default function UsersPage() {
   useEffect(() => {
@@ -17,8 +17,8 @@ export default function UsersPage() {
       <NavbarUser />
       <Hero />
       <HowItWorks />
-      <NewsSection />
-      <CTASection />
+      <CreateReportSection />
+      <ReportSection />
     </div>
   );
 }

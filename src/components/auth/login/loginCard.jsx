@@ -44,10 +44,12 @@ export default function LoginCard() {
         try {
           const meRes = await fetch('/api/auth/me', { credentials: 'include' });
           const meData = await meRes.json();
-          const role = meData?.data?.role;
+          const userObj = meData?.user || meData?.data;
+          const role = userObj?.role;
+          console.log("meData user:", userObj);
           
-          if (meData?.success && meData?.data) {
-            sessionStorage.setItem('user_session', JSON.stringify(meData.data));
+          if (meData?.success && userObj) {
+            sessionStorage.setItem('user_session', JSON.stringify(userObj));
           }
 
           setTimeout(() => {

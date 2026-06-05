@@ -6,7 +6,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="min-h-screen flex items-center pt-16 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-violet-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-indigo-950/30"
+      className="min-h-screen flex items-center pt-16 bg-gradient-to-br from-slate-50 via-blue-50/40 to-violet-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-blue-950/30"
     >
       <div className="max-w-6xl mx-auto px-6 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-20">
@@ -14,9 +14,9 @@ export default function Hero() {
           {/* Left: Description */}
           <div className="flex flex-col gap-6">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 rounded-full px-3.5 py-1.5 w-fit">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800 rounded-full px-3.5 py-1.5 w-fit">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 tracking-wide uppercase">
                 Platform Pengaduan Lingkungan Warga
               </span>
             </div>
@@ -24,7 +24,7 @@ export default function Hero() {
             {/* Heading */}
             <h1 className="text-5xl font-extrabold leading-tight tracking-tight text-zinc-900 dark:text-white">
               Sampaikan Keluhan Anda di{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-500">
                 LaporIn
               </span>
             </h1>
@@ -38,7 +38,7 @@ export default function Hero() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <a
                 href="/login"
-                className="flex h-12 items-center justify-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 px-12 text-sm font-semibold text-white transition-colors shadow-lg shadow-indigo-200 dark:shadow-none leading-relaxed"
+                className="flex h-12 items-center justify-center gap-2 rounded-full bg-blue-600 hover:bg-blue-700 px-12 text-sm font-semibold text-white transition-colors shadow-lg shadow-blue-200 dark:shadow-none leading-relaxed"
               >
                 Buat Laporan
               </a>
@@ -48,12 +48,12 @@ export default function Hero() {
           {/* Right: Lottie */}
           <div className="flex flex-col items-center justify-center relative">
             {/* Glow blob */}
-            <div className="absolute w-72 h-72 rounded-full bg-indigo-400/20 dark:bg-indigo-600/20 blur-3xl pointer-events-none" />
+            <div className="absolute w-72 h-72 rounded-full bg-blue-400/20 dark:bg-blue-600/20 blur-3xl pointer-events-none" />
 
             {/* Floating card — top */}
-            <div className="absolute top-4 right-4 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-indigo-100 dark:border-zinc-700 rounded-2xl px-4 py-2.5 shadow-lg text-sm animate-bounce">
+            <div className="absolute top-4 right-4 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-blue-100 dark:border-zinc-700 rounded-2xl px-4 py-2.5 shadow-lg text-sm animate-bounce">
               <div className="flex flex-row items-center gap-1 text-zinc-400 text-xs">
-                <MapPin size={12} className="text-indigo-500" /> Lokasi Anda
+                <MapPin size={12} className="text-blue-500" /> Lokasi Anda
               </div>
               <p className="font-semibold text-zinc-800 dark:text-zinc-100 text-sm">Poskamling RT 01</p>
             </div>
@@ -67,7 +67,7 @@ export default function Hero() {
             />
 
             {/* Floating card — bottom */}
-            <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-indigo-100 dark:border-zinc-700 rounded-2xl px-4 py-2.5 shadow-lg text-sm">
+            <div className="absolute bottom-4 left-4 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-blue-100 dark:border-zinc-700 rounded-2xl px-4 py-2.5 shadow-lg text-sm">
               <div className="flex flex-row items-center gap-2 text-zinc-400 text-xs">
                 <CheckCircle size={12} className="text-emerald-500" /> Status
               </div>
