@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { 
   Search, Edit2, Trash2, ShieldAlert, CheckCircle2, 
   XCircle, UserCircle2, ShieldCheck, Mail, Phone,
-  RefreshCcw, AlertTriangle, UserX, Loader2
+  RefreshCcw, UserX, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import toast from 'react-hot-toast';
 
 export default function UserManagement({ roleTarget = "user", viewerRole = "admin" }) {
   const [users, setUsers] = useState([]);
@@ -14,6 +15,19 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [viewerRoleState, setViewerRoleState] = useState(viewerRole);
+
+  useEffect(() => {
+    const session = sessionStorage.getItem("user_session");
+    if (session) {
+      try {
+        const u = JSON.parse(session);
+        if (u.role) setViewerRoleState(u.role);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   // Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -74,12 +88,13 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
         setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...data.data } : u));
         setIsEditModalOpen(false);
         setEditingUser(null);
+        toast.success("Perubahan berhasil disimpan!");
       } else {
-        alert(data.message || "Gagal menyimpan perubahan.");
+        toast.error(data.message || "Gagal menyimpan perubahan.");
       }
     } catch (error) {
       console.error("Gagal update:", error);
-      alert("Terjadi kesalahan jaringan.");
+      toast.error("Terjadi kesalahan jaringan.");
     } finally {
       setIsSaving(false);
     }
@@ -95,11 +110,13 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
       const data = await res.json();
       if (data.success) {
         setUsers(users.map(u => u.id === user.id ? { ...u, isActive: false } : u));
+        toast.success("Pengguna berhasil dinonaktifkan!");
       } else {
-        alert(data.message || "Gagal menonaktifkan pengguna.");
+        toast.error(data.message || "Gagal menonaktifkan pengguna.");
       }
     } catch (error) {
       console.error("Gagal delete:", error);
+      toast.error("Terjadi kesalahan sistem saat menonaktifkan.");
     }
   };
 
@@ -113,11 +130,13 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
       const data = await res.json();
       if (data.success) {
         setUsers(users.map(u => u.id === user.id ? { ...u, isActive: true } : u));
+        toast.success("Pengguna berhasil diaktifkan kembali!");
       } else {
-        alert(data.message || "Gagal mengaktifkan kembali.");
+        toast.error(data.message || "Gagal mengaktifkan kembali.");
       }
     } catch (error) {
       console.error("Gagal restore:", error);
+      toast.error("Terjadi kesalahan sistem saat mengaktifkan kembali.");
     }
   };
 
@@ -142,7 +161,7 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
             placeholder="Cari nama atau email..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full md:w-72 pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+            className="w-full md:w-72 pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition-all"
           />
         </div>
       </div>
@@ -157,14 +176,14 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                 <th className="px-6 py-4">Kontak</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Bergabung</th>
-                {viewerRole === 'admin' && <th className="px-6 py-4 text-center">Aksi</th>}
+                {viewerRoleState === 'admin' && <th className="px-6 py-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-10 text-center">
-                    <Loader2 size={24} className="animate-spin text-blue-600 mx-auto mb-2" />
+                    <Loader2 size={24} className="animate-spin text-[#2563EB] mx-auto mb-2" />
                     <p className="text-gray-400 font-medium">Memuat data...</p>
                   </td>
                 </tr>
@@ -207,7 +226,7 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                     </td>
                     <td className="px-6 py-4">
                       {user.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
                           <CheckCircle2 size={12} /> Aktif
                         </span>
                       ) : (
@@ -220,7 +239,7 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                       {new Date(user.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     
-                    {viewerRole === 'admin' && (
+                    {viewerRoleState === 'admin' && (
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
                           <button 
@@ -242,7 +261,7 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                           ) : (
                             <button 
                               onClick={() => handleRestore(user)}
-                              className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
                               title="Aktifkan Kembali"
                             >
                               <RefreshCcw size={16} />
@@ -307,58 +326,57 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Username</label>
                 <div className="relative">
                   <UserCircle2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={editForm.username}
-                    onChange={e => setEditForm({...editForm, username: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    value={editForm.email}
-                    onChange={e => setEditForm({...editForm, email: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nomor Telepon</label>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={editForm.phoneNumber}
-                    onChange={e => setEditForm({...editForm, phoneNumber: e.target.value})}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-
-              {/* Tampilkan dropdown role hanya jika role saat ini BUKAN admin. (Admin harus super admin yg ganti) */}
-              {editingUser?.role !== 'admin' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ubah Role</label>
-                  <div className="relative">
-                    <ShieldCheck size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      value={editForm.role}
-                      onChange={e => setEditForm({...editForm, role: e.target.value})}
-                      className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none cursor-pointer"
-                    >
+                    <input
+                     type="text"
+                     required
+                     value={editForm.username}
+                     onChange={e => setEditForm({...editForm, username: e.target.value})}
+                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                   />
+                 </div>
+               </div>
+               
+               <div>
+                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+                 <div className="relative">
+                   <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                   <input
+                     type="email"
+                     required
+                     value={editForm.email}
+                     onChange={e => setEditForm({...editForm, email: e.target.value})}
+                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                   />
+                 </div>
+               </div>
+ 
+               <div>
+                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nomor Telepon</label>
+                 <div className="relative">
+                   <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                   <input
+                     type="tel"
+                     required
+                     value={editForm.phoneNumber}
+                     onChange={e => setEditForm({...editForm, phoneNumber: e.target.value})}
+                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                   />
+                 </div>
+               </div>
+ 
+               {/* Tampilkan dropdown role hanya jika role saat ini BUKAN admin. (Admin harus super admin yg ganti) */}
+               {editingUser?.role !== 'admin' && (
+                 <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ubah Role</label>
+                   <div className="relative">
+                     <ShieldCheck size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                     <select
+                       value={editForm.role}
+                       onChange={e => setEditForm({...editForm, role: e.target.value})}
+                       className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB] appearance-none cursor-pointer"
+                     >
                       <option value="user">User (Masyarakat)</option>
                       <option value="petugas">Petugas</option>
-                      <option value="admin">Admin</option>
                     </select>
                   </div>
                 </div>
@@ -376,7 +394,7 @@ export default function UserManagement({ roleTarget = "user", viewerRole = "admi
                 <Button 
                   type="submit" 
                   disabled={isSaving}
-                  className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                  className="rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white"
                 >
                   {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
                 </Button>
