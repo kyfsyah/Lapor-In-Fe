@@ -104,7 +104,7 @@ export default function RecentReportsSection() {
         <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-extrabold text-[#111827] flex items-center gap-2">
-              Update <span className="text-blue-600">Terbaru</span> ⚡
+              Update <span className="text-blue-600">Terbaru</span>
             </h2>
             <p className="text-gray-500 text-sm mt-1 mb-4">
               Laporan masyarakat yang sedang ditindaklanjuti.
@@ -180,7 +180,7 @@ export default function RecentReportsSection() {
                     <div className="absolute top-1 left-1 sm:hidden">
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
                         report.status === 'selesai' 
-                          ? 'bg-emerald-500 text-white' 
+                          ? 'bg-green-500 text-white' 
                           : 'bg-amber-500 text-white'
                       }`}>
                         {report.status}
@@ -222,7 +222,7 @@ export default function RecentReportsSection() {
                       <div className="hidden sm:block shrink-0">
                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
                           report.status === 'selesai' 
-                            ? 'bg-emerald-100 text-emerald-700' 
+                            ? 'bg-green-100 text-green-700' 
                             : 'bg-amber-100 text-amber-700'
                         }`}>
                           {report.status}
