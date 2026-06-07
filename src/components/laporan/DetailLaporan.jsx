@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ShieldCheck, AlertTriangle, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeft, ShieldCheck, AlertTriangle, Edit2, Trash2, X, MapPin, AlignLeft, Tag, Info, Image as ImageIcon } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import NavbarUser from "@/components/users/NavbarUser";
+import NavbarAdmin from "@/components/dashboard/admin/NavbarAdmin";
+import Footer from "@/components/layout/Footer";
 import CommentSection from "@/components/landing/CommentSection";
+import toast from 'react-hot-toast';
 
-export default function LaporanDetail() {
+export default function DetailLaporan() {
   const { id } = useParams();
   const router = useRouter();
   const [report, setReport] = useState(null);
@@ -26,6 +29,10 @@ export default function LaporanDetail() {
   const [editTanggapanText, setEditTanggapanText] = useState("");
   const [isUpdatingTanggapan, setIsUpdatingTanggapan] = useState(false);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [alasanHapus, setAlasanHapus] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     const checkLogin = () => {
       const session = sessionStorage.getItem("user_session");
@@ -38,7 +45,7 @@ export default function LaporanDetail() {
 
     const fetchReport = async () => {
       try {
-        const res = await fetch(`/api/reports/${id}`);
+        const res = await fetch(`/api/reports/${id}`, { cache: 'no-store' });
         if (res.ok) {
           const result = await res.json();
           if (result.success && result.data) {
@@ -62,6 +69,34 @@ export default function LaporanDetail() {
     return name.substring(0, 2) + "*".repeat(name.length - 2);
   };
 
+  const handleTanggapanFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Validasi ukuran (Maks 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        toast.error("Ukuran file maksimal 10MB!");
+        e.target.value = '';
+        return;
+      }
+      
+      // Validasi ekstensi
+      const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/x-matroska'];
+      if (!allowedTypes.includes(selectedFile.type)) {
+        toast.error("Format file tidak didukung! Harap unggah PNG, JPG, MP4, atau MKV.");
+        e.target.value = '';
+        return;
+      }
+      setTanggapanFile(selectedFile);
+    } else {
+      setTanggapanFile(null);
+    }
+  };
+
+  const isVideo = (url) => {
+    if (!url) return false;
+    return url.match(/\.(mp4|mkv|webm)($|\?)/i);
+  };
+
   // ── Handlers ─────────────────────────────────────────────
   const handlePostTanggapan = async (e) => {
     e.preventDefault();
@@ -82,12 +117,13 @@ export default function LaporanDetail() {
         setReport({ ...report, tanggapan: [...(report.tanggapan || []), result.data] });
         setNewTanggapan("");
         setTanggapanFile(null);
+        toast.success("Tanggapan berhasil dikirim!");
       } else {
-        alert(result.message || "Gagal mengirim tanggapan.");
+        toast.error(result.message || "Gagal mengirim tanggapan.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan sistem saat mengirim tanggapan.");
+      toast.error("Terjadi kesalahan sistem saat mengirim tanggapan.");
     } finally {
       setSubmittingTanggapan(false);
     }
@@ -110,12 +146,13 @@ export default function LaporanDetail() {
         setReport({ ...report, tanggapan: report.tanggapan.map((t) => (t.id === tanggapanId ? result.data : t)) });
         setEditingTanggapanId(null);
         setEditTanggapanText("");
+        toast.success("Tanggapan berhasil diperbarui!");
       } else {
-        alert(result.message || "Gagal memperbarui tanggapan.");
+        toast.error(result.message || "Gagal memperbarui tanggapan.");
       }
     } catch (error) {
       console.error("Gagal mengupdate tanggapan:", error);
-      alert("Terjadi kesalahan jaringan saat mengupdate tanggapan.");
+      toast.error("Terjadi kesalahan jaringan saat mengupdate tanggapan.");
     } finally {
       setIsUpdatingTanggapan(false);
     }
@@ -131,20 +168,52 @@ export default function LaporanDetail() {
       const result = await res.json();
       if (res.ok && result.success) {
         setReport({ ...report, tanggapan: report.tanggapan.filter((t) => t.id !== tanggapanId) });
+        toast.success("Tanggapan berhasil dihapus!");
       } else {
-        alert(result.message || "Gagal menghapus tanggapan.");
+        toast.error(result.message || "Gagal menghapus tanggapan.");
       }
     } catch (error) {
       console.error("Gagal menghapus tanggapan:", error);
-      alert("Terjadi kesalahan jaringan saat menghapus tanggapan.");
+      toast.error("Terjadi kesalahan jaringan saat menghapus tanggapan.");
+    }
+  };
+
+  const handleDeleteReport = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/reports/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Laporan berhasil dihapus dari database!");
+        setIsDeleteModalOpen(false);
+        router.push(user?.role === 'user' ? '/users/history' : '/dashboard');
+      } else {
+        toast.error(data.message || "Gagal menghapus laporan.");
+      }
+    } catch (error) {
+      console.error("Gagal menghapus laporan:", error);
+      toast.error("Terjadi kesalahan jaringan.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   // ── Navbar helper ─────────────────────────────────────────
   const NavbarWrapper = () => (
-    <div className="bg-white border-b border-gray-100 shadow-sm z-10">
+    <div className="relative z-50">
       <div className="max-w-7xl mx-auto w-full">
-        {isLoggedIn ? <NavbarUser /> : <Navbar />}
+        {isLoggedIn ? (
+          user?.role === "admin" || user?.role === "petugas" ? (
+            <NavbarAdmin />
+          ) : (
+            <NavbarUser />
+          )
+        ) : (
+          <Navbar />
+        )}
       </div>
     </div>
   );
@@ -155,8 +224,9 @@ export default function LaporanDetail() {
       <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans">
         <NavbarWrapper />
         <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <div className="animate-spin w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full" />
         </div>
+        <Footer />
       </div>
     );
   }
@@ -175,6 +245,7 @@ export default function LaporanDetail() {
             Kembali
           </button>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -184,89 +255,168 @@ export default function LaporanDetail() {
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans">
       <NavbarWrapper />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-20 pb-6 sm:pt-24 sm:pb-8">
-        <div className="w-full">
+      <main className="pt-24 pb-12 relative px-4 bg-[#FAFAFA] min-h-screen flex-1">
+        <div className="absolute inset-0 bg-indigo-600/5 transform -skew-y-2 z-0 h-96"></div>
+
+        <div className="max-w-4xl mx-auto relative z-10 w-full">
+
+          {/* Tombol Back */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors mb-6 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm w-fit"
+          >
+            <ArrowLeft size={16} /> Kembali
+          </button>
 
           {/* ── Postingan Laporan ── */}
-          <article className="bg-white sm:rounded-xl border-gray-100 sm:border shadow-sm overflow-hidden mb-6">
-            {/* Header */}
-            <div className="p-3 sm:p-4 flex items-center gap-3 text-xs border-b border-gray-50/50">
-              <button
-                onClick={() => router.back()}
-                className="text-gray-500 hover:text-black transition-colors shrink-0 p-1 rounded-full hover:bg-gray-100"
-                title="Kembali"
-              >
-                <ArrowLeft size={18} />
-              </button>
-
-              <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold uppercase shrink-0">
-                {report.users?.username?.charAt(0) || "?"}
+          <article className="bg-white p-6 md:p-10 rounded-[2rem] shadow-xl shadow-indigo-600/10 border border-indigo-600/20 mb-8">
+            
+            {/* Header: User, Tanggal, Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold uppercase shadow-sm border border-gray-200/50">
+                  {report.users?.username?.charAt(0) || "?"}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">
+                    {maskName(report.users?.username)}
+                  </p>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-2">
+                    <span>{new Date(report.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
+                    <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span className="font-mono text-gray-400">{report.nomorResi || report.id.substring(0, 8)}</span>
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 flex-wrap text-gray-500">
-                <span className="font-bold text-[#1c1c1c] hover:underline cursor-pointer">
-                  {report.kategori_laporan?.namaKategori || "Lainnya"}
-                </span>
-                <span className="text-[10px]">•</span>
-                <span>
-                  Diposting oleh{" "}
-                  <span className="hover:underline cursor-pointer">{maskName(report.users?.username)}</span>
-                </span>
-                <span className="text-[10px]">•</span>
-                <span>
-                  {new Date(report.createdAt).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
+              <div className="flex items-center gap-3 sm:gap-4">
                 <span
-                  className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm ${
                     report.status === "selesai"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-amber-100 text-amber-700"
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                      : report.status === "ditolak"
+                      ? "bg-red-50 text-red-600 border border-red-100"
+                      : report.status === "diproses"
+                      ? "bg-blue-50 text-blue-600 border border-blue-100"
+                      : "bg-amber-50 text-amber-600 border border-amber-100"
                   }`}
                 >
                   {report.status}
                 </span>
+
+                {/* Aksi User/Admin */}
+                {user && (
+                  <div className="flex items-center gap-2">
+                    {user.id === report.userId && report.status === 'pending' && (
+                      <button
+                        onClick={() => router.push(`/users/edit/${report.id}`)}
+                        className="text-indigo-500 hover:text-indigo-700 transition-colors p-2 rounded-xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100"
+                        title="Edit Laporan"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    )}
+
+                    {(user.role === 'admin' || (user.id === report.userId && report.status === 'pending')) && (
+                      <button
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100"
+                        title="Hapus Laporan"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Judul */}
-            <div className="px-3 sm:px-4 pb-2">
-              <h1 className="text-xl md:text-[22px] font-medium text-[#1c1c1c] mb-1 leading-snug">
+            {/* Judul Laporan */}
+            <div className="mb-8">
+              <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-snug tracking-tight">
                 {report.judul}
               </h1>
             </div>
 
-            {/* Gambar */}
-            {report.mediaUrls && report.mediaUrls.length > 0 && (
-              <div className="w-full relative bg-gray-100 flex justify-center mb-3 border-t border-b border-gray-100">
-                <img
-                  src={report.mediaUrls[0]}
-                  alt={report.judul}
-                  className="w-full h-[250px] sm:h-[350px] md:h-[400px] object-cover"
-                />
+            {/* Grid Informasi (Kategori & Lokasi) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Info size={16} className="text-indigo-600" />
+                  Kategori Laporan
+                </label>
+                <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900">
+                  {report.kategori_laporan?.namaKategori || "Lainnya"}
+                </div>
               </div>
-            )}
 
-            {/* Deskripsi */}
-            <div className="px-3 sm:px-4 pb-4">
-              <div className="prose prose-sm max-w-none text-[#1c1c1c] whitespace-pre-wrap leading-relaxed font-sans">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <MapPin size={16} className="text-indigo-600" />
+                  Lokasi Kejadian (Patokan)
+                </label>
+                <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900">
+                  {report.alamat || "Lokasi tidak disebutkan secara spesifik."}
+                </div>
+              </div>
+            </div>
+
+            {/* Deskripsi Lengkap */}
+            <div className="space-y-2 mb-8">
+              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                <AlignLeft size={16} className="text-indigo-600" />
+                Deskripsi Lengkap
+              </label>
+              <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-sm font-medium text-gray-800 leading-relaxed whitespace-pre-wrap min-h-[120px]">
                 {report.deskripsi || "Tidak ada rincian deskripsi untuk laporan ini."}
               </div>
             </div>
+
+            {/* Lampiran Foto/Video */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+                <ImageIcon size={16} className="text-indigo-600" />
+                Lampiran Bukti Kejadian
+              </label>
+              
+              {report.mediaUrls && report.mediaUrls.length > 0 ? (
+                <div className="relative w-full h-auto max-h-[500px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-black flex justify-center">
+                  {isVideo(report.mediaUrls[0]) ? (
+                    <video
+                      src={report.mediaUrls[0]}
+                      controls
+                      className="w-full h-full max-h-[500px] object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={report.mediaUrls[0]}
+                      alt={report.judul}
+                      className="w-full h-full max-h-[500px] object-contain"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-gray-50">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
+                    <ImageIcon size={24} />
+                  </div>
+                  <p className="text-sm font-bold text-gray-500">Tidak ada lampiran yang ditambahkan</p>
+                </div>
+              )}
+            </div>
+
           </article>
 
           {/* ── Tanggapan Resmi (X / Quote Style) ── */}
           {report.tanggapan && report.tanggapan.length > 0 && (
-            <div className="mb-8 space-y-6 pt-4">
-              <h3 className="font-black text-xl text-gray-900 border-b border-gray-100 pb-3">
+            <div className="mb-8 bg-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-indigo-600/5 border border-gray-100 space-y-6">
+              <h3 className="font-black text-xl text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                <ShieldCheck size={24} className="text-indigo-600" />
                 Tanggapan Resmi
               </h3>
 
               {report.tanggapan.map((tgp) => (
-                <div key={tgp.id} className="flex items-start gap-3 sm:gap-4 px-1 sm:px-2 group">
+                <div key={tgp.id} className="flex items-start gap-3 sm:gap-4 group">
 
                   {/* Avatar Admin */}
                   <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center font-bold shrink-0 shadow-sm mt-1">
@@ -281,7 +431,7 @@ export default function LaporanDetail() {
                       <p className="text-[15px] font-bold text-gray-900 hover:underline cursor-pointer">
                         {tgp.users?.username || "Admin Petugas"}
                       </p>
-                      <ShieldCheck size={15} className="text-blue-600" />
+                      <ShieldCheck size={15} className="text-indigo-600" />
                       <p className="text-sm text-gray-500 hover:underline cursor-pointer">
                         {new Date(tgp.createdAt).toLocaleDateString("id-ID", {
                           day: "numeric",
@@ -319,7 +469,7 @@ export default function LaporanDetail() {
                         <textarea
                           value={editTanggapanText}
                           onChange={(e) => setEditTanggapanText(e.target.value)}
-                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[80px]"
+                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-600 min-h-[80px]"
                         />
                         <div className="flex justify-end gap-2 mt-2">
                           <button
@@ -331,7 +481,7 @@ export default function LaporanDetail() {
                           <button
                             onClick={() => handleUpdateTanggapan(tgp.id)}
                             disabled={isUpdatingTanggapan || !editTanggapanText.trim()}
-                            className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                            className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                           >
                             {isUpdatingTanggapan ? "Menyimpan..." : "Simpan"}
                           </button>
@@ -346,69 +496,22 @@ export default function LaporanDetail() {
                     {/* Lampiran Admin */}
                     {tgp.mediaUrls && tgp.mediaUrls.length > 0 && (
                       <div className="mb-3">
-                        <img
-                          src={tgp.mediaUrls[0]}
-                          alt="Lampiran Tanggapan"
-                          className="rounded-2xl max-h-[200px] w-auto object-cover border border-gray-200 shadow-sm"
-                        />
+                        {isVideo(tgp.mediaUrls[0]) ? (
+                          <video
+                            src={tgp.mediaUrls[0]}
+                            controls
+                            className="rounded-2xl max-h-[300px] w-auto object-contain border border-gray-200 shadow-sm bg-black"
+                          />
+                        ) : (
+                          <img
+                            src={tgp.mediaUrls[0]}
+                            alt="Lampiran Tanggapan"
+                            className="rounded-2xl max-h-[200px] w-auto object-cover border border-gray-200 shadow-sm"
+                          />
+                        )}
                       </div>
                     )}
 
-                    {/* Embed Laporan (Twitter/X Quote Style) */}
-
-<div
-  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-  className="mt-3 border border-gray-200 rounded-2xl p-3 hover:bg-gray-50 transition cursor-pointer"
->
-  <div className="flex gap-3">
-
-
-{/* Thumbnail */}
-{report.mediaUrls?.length > 0 && (
-  <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-200">
-    <img
-      src={report.mediaUrls[0]}
-      alt={report.judul}
-      className="w-full h-full object-cover"
-    />
-  </div>
-)}
-
-{/* Content */}
-<div className="flex-1 min-w-0">
-
-  <div className="flex items-center gap-2 mb-1">
-    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600 uppercase">
-      {report.users?.username?.charAt(0) || "?"}
-    </div>
-
-    <span className="text-xs font-semibold text-gray-900 truncate">
-      {maskName(report.users?.username)}
-    </span>
-
-    <span className="text-xs text-gray-500">
-      @{maskName(report.users?.username)
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")}
-    </span>
-  </div>
-
-  <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
-    {report.judul}
-  </h4>
-
-  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-    {report.deskripsi}
-  </p>
-</div>
-
-
-  </div>
-
-
-
-                      
-                    </div>
 
                   </div>
                 </div>
@@ -427,10 +530,17 @@ export default function LaporanDetail() {
                   Dashboard.
                 </p>
               </div>
+            ) : report.status === "ditolak" ? (
+              <div className="bg-red-50 border border-red-200 sm:rounded-xl p-4 mb-6 flex items-start gap-3 shadow-sm">
+                <AlertTriangle size={18} className="text-red-600 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-800">
+                  Laporan ini telah <b>Ditolak</b>. Laporan telah dikunci dan Anda tidak dapat menambahkan tanggapan resmi lagi.
+                </p>
+              </div>
             ) : (
               <div className="bg-white border border-gray-200 shadow-sm sm:rounded-xl p-4 sm:p-5 mb-6">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <ShieldCheck size={18} className="text-blue-600" />
+                  <ShieldCheck size={18} className="text-indigo-600" />
                   Berikan Tanggapan Resmi
                 </h3>
                 <form onSubmit={handlePostTanggapan} className="space-y-3">
@@ -438,19 +548,20 @@ export default function LaporanDetail() {
                     value={newTanggapan}
                     onChange={(e) => setNewTanggapan(e.target.value)}
                     placeholder="Tulis tanggapan atau tindak lanjut resmi di sini..."
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent min-h-[100px] transition-all resize-y"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent min-h-[100px] transition-all resize-y"
                   />
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <input
                       type="file"
-                      accept="image/*"
-                      onChange={(e) => setTanggapanFile(e.target.files[0])}
-                      className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600/10 file:text-blue-600 hover:file:bg-blue-600/20 transition-colors"
+                      accept="image/png, image/jpeg, video/mp4, video/x-matroska"
+                      onChange={handleTanggapanFileChange}
+                      className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-600/10 file:text-indigo-600 hover:file:bg-indigo-600/20 transition-colors max-w-[200px] sm:max-w-xs"
+                      title="PNG, JPG, MP4, MKV (Maks 10MB)"
                     />
                     <button
                       type="submit"
                       disabled={submittingTanggapan || !newTanggapan.trim()}
-                      className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-bold text-sm rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
+                      className="w-full sm:w-auto px-6 py-2 bg-indigo-600 text-white font-bold text-sm rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm"
                     >
                       {submittingTanggapan ? "Mengirim..." : "Kirim Tanggapan"}
                     </button>
@@ -462,11 +573,57 @@ export default function LaporanDetail() {
 
           {/* ── Komentar Publik ── */}
           <div className="bg-white sm:rounded-[4px] border-gray-300 sm:border overflow-hidden">
-            <CommentSection laporanId={report.id} />
+            <CommentSection laporanId={report.id} status={report.status} />
           </div>
 
         </div>
       </main>
+
+      {/* Modal Hapus Laporan */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-red-50/50">
+              <h3 className="font-bold text-red-700 flex items-center gap-2">
+                <Trash2 size={18} />
+                Hapus Laporan
+              </h3>
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Judul Laporan</p>
+                <p className="text-sm font-semibold text-gray-800">{report.judul}</p>
+              </div>
+              
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <p className="text-sm text-gray-600">Apakah Anda yakin ingin membatalkan dan menghapus laporan ini secara permanen?</p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-50 flex justify-end gap-2 bg-gray-50/30">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleDeleteReport}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Menghapus...' : 'Ya, Hapus Permanen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
