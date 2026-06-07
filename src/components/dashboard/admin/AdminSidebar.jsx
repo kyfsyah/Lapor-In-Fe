@@ -55,12 +55,12 @@ export function AdminSidebar() {
           sessionStorage.setItem('user_session', JSON.stringify(data.user));
         } else {
           sessionStorage.removeItem('user_session');
-          router.push('/auth/login');
+          router.push('/login');
         }
       } catch (error) {
         console.error("Gagal mengambil data user:", error);
         sessionStorage.removeItem('user_session');
-        router.push('/auth/login');
+        router.push('/login');
       } finally {
         setLoading(false);
       }
@@ -83,7 +83,7 @@ export function AdminSidebar() {
   };
 
   const getNavItems = () => {
-    const basePath = userData?.role === 'admin' ? '/dashboard/admin' : '/dashboard/petugas';
+    const basePath = '/dashboard';
 
     const items = [
       {
@@ -104,12 +104,6 @@ export function AdminSidebar() {
     // Admin-only items
     if (userData?.role === 'admin') {
       items[1].items.push({ name: 'Data Petugas', href: `${basePath}/petugas`, icon: ShieldCheck });
-      items.push({
-        label: 'SISTEM',
-        items: [
-          { name: 'Pengaturan', href: `${basePath}/pengaturan`, icon: Settings },
-        ]
-      });
     }
 
     return items;
@@ -118,7 +112,7 @@ export function AdminSidebar() {
   const navItems = getNavItems();
 
   const isActive = (href) => {
-    const basePath = userData?.role === 'admin' ? '/dashboard/admin' : '/dashboard/petugas';
+    const basePath = '/dashboard';
     if (href === basePath) {
       return pathname === basePath;
     }
@@ -138,11 +132,11 @@ export function AdminSidebar() {
       {/* MOBILE HEADER BAR */}
       <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100 sticky top-0 z-40 w-full">
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-600/20">
+          <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-bold shadow-sm shadow-indigo-600/20">
             <ShieldCheck size={16} />
           </span>
           <span className="text-lg font-black text-gray-900 tracking-tight">
-            zona<span className="text-blue-600">lapor</span>
+            Lapor<span className="text-indigo-600">In</span>
           </span>
         </div>
 
@@ -173,13 +167,13 @@ export function AdminSidebar() {
         <div className="space-y-8">
           {/* Logo & Close Button */}
           <div className="flex items-center justify-between">
-            <Link href={userData?.role === 'admin' ? '/dashboard/admin' : '/dashboard/petugas'} className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform duration-300">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform duration-300">
                 <ShieldCheck size={20} />
               </div>
               <div>
                 <span className="text-2xl font-black text-gray-900 tracking-tight block leading-none">
-                  zona<span className="text-blue-600">lapor</span>
+                  Lapor<span className="text-indigo-600">In</span>
                 </span>
                 <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase">Panel</span>
               </div>
@@ -209,16 +203,16 @@ export function AdminSidebar() {
                       className={`
                         flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 group/item
                         ${active
-                          ? 'bg-gradient-to-r from-blue-600/10 to-blue-500/5 text-blue-600 shadow-sm'
+                          ? 'bg-gradient-to-r from-indigo-600/10 to-indigo-500/5 text-indigo-600 shadow-sm'
                           : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                         }
                       `}
                     >
                       <div className="flex items-center gap-3.5">
-                        <Icon className={`w-5 h-5 transition-transform group-hover/item:scale-110 duration-200 ${active ? 'text-blue-600' : 'text-gray-400 group-hover/item:text-gray-600'}`} />
+                        <Icon className={`w-5 h-5 transition-transform group-hover/item:scale-110 duration-200 ${active ? 'text-indigo-600' : 'text-gray-400 group-hover/item:text-gray-600'}`} />
                         {item.name}
                       </div>
-                      {active && <ChevronRight size={14} className="text-blue-600/60" />}
+                      {active && <ChevronRight size={14} className="text-indigo-600/60" />}
                     </Link>
                   );
                 })}
@@ -241,22 +235,26 @@ export function AdminSidebar() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-100/50">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-300 flex items-center justify-center text-white text-base font-bold shadow-sm shrink-0">
+            <Link 
+              href="/dashboard/profile"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3.5 p-3.5 bg-gray-50 hover:bg-gray-100 rounded-2xl border border-gray-100/50 cursor-pointer transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-300 flex items-center justify-center text-white text-base font-bold shadow-sm shrink-0 group-hover:scale-105 transition-transform">
                 {userData?.username ? userData.username.charAt(0).toUpperCase() : <User size={18} />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-gray-900 truncate leading-none">
+                  <p className="text-sm font-bold text-gray-900 truncate leading-none group-hover:text-indigo-600 transition-colors">
                     {userData?.username || 'Admin'}
                   </p>
                   {roleBadge}
                 </div>
                 <p className="text-xs text-gray-400 truncate font-medium mt-1">
-                  {userData?.email || 'admin@zonalapor.id'}
+                  {userData?.email || 'admin@laporin.id'}
                 </p>
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Logout Button */}
