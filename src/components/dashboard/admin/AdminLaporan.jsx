@@ -6,9 +6,10 @@ import {
   FileText, Search, Clock, CheckCircle2, Activity,
   AlertCircle, Eye, MessageSquare, ChevronLeft,
   ChevronRight, MoreHorizontal, SlidersHorizontal,
-  ArrowUpDown, MapPin, Calendar, User, X
+  ArrowUpDown, MapPin, Calendar, User, X, Trash2, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import toast from 'react-hot-toast';
 
 export function AdminLaporan() {
   const router = useRouter();
@@ -25,6 +26,32 @@ export function AdminLaporan() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [alasanPenolakan, setAlasanPenolakan] = useState('');
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [alasanHapus, setAlasanHapus] = useState('');
+  const [userSession, setUserSession] = useState(null);
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem('user_session');
+    if (cached) {
+      setUserSession(JSON.parse(cached));
+    } else {
+      const fetchSession = async () => {
+        try {
+          const res = await fetch('/api/auth/me', { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            setUserSession(data.user);
+            sessionStorage.setItem('user_session', JSON.stringify(data.user));
+          }
+        } catch (error) {
+          console.error("Gagal mengambil data user:", error);
+        }
+      };
+      fetchSession();
+    }
+  }, []);
 
   const filters = [
     { key: 'semua', label: 'Semua' },
@@ -89,6 +116,12 @@ export function AdminLaporan() {
 
   const handleUpdateStatus = async () => {
     if (!selectedReport || !newStatus) return;
+
+    if (newStatus === 'ditolak' && !alasanPenolakan.trim()) {
+      toast.error('Alasan penolakan wajib diisi!');
+      return;
+    }
+
     setUpdating(true);
     try {
       const res = await fetch(`/api/reports/${selectedReport.id}/status`, {
@@ -99,14 +132,51 @@ export function AdminLaporan() {
       });
       const data = await res.json();
       if (data.success) {
+        
+        // Kirim tanggapan penolakan jika status ditolak
+        if (newStatus === 'ditolak') {
+          await fetch(`/api/reports/${selectedReport.id}/tanggapan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ isi_tanggapan: `[Alasan Penolakan]: ${alasanPenolakan}` })
+          });
+        }
+
         setIsModalOpen(false);
+        setAlasanPenolakan(''); // reset
         fetchReports(); // Refresh data
+        toast.success(`Status berhasil diubah menjadi ${newStatus}!`);
       } else {
-        alert(data.message || 'Gagal mengubah status');
+        toast.error(data.message || 'Gagal mengubah status');
       }
     } catch (error) {
       console.error(error);
-      alert('Terjadi kesalahan saat mengupdate status.');
+      toast.error('Terjadi kesalahan saat mengupdate status.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteReport = async () => {
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/reports/${selectedReport.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        toast.success("Laporan berhasil dihapus secara permanen!");
+        setIsDeleteModalOpen(false);
+        fetchReports();
+      } else {
+        toast.error(data.message || "Gagal menghapus laporan.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Terjadi kesalahan jaringan.");
     } finally {
       setUpdating(false);
     }
@@ -165,7 +235,7 @@ export function AdminLaporan() {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               placeholder="Cari berdasarkan nomor resi..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600/50 transition"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600/50 transition"
             />
           </div>
           <div className="relative shrink-0 w-full md:w-auto">
@@ -173,7 +243,7 @@ export function AdminLaporan() {
             <select
               value={activeCategory}
               onChange={(e) => { setActiveCategory(e.target.value); setCurrentPage(1); }}
-              className="w-full md:w-48 pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600/20 cursor-pointer"
+              className="w-full md:w-48 pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-600/20 cursor-pointer"
             >
               <option value="">Semua Kategori</option>
               {categories.map((cat) => (
@@ -192,7 +262,7 @@ export function AdminLaporan() {
               className={`
                 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200
                 ${activeFilter === filter.key
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
                   : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 border border-gray-200'
                 }
               `}
@@ -228,7 +298,7 @@ export function AdminLaporan() {
         {/* Report Rows */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="mt-4 text-sm font-semibold text-gray-500">Memuat laporan...</p>
           </div>
         ) : reports.length === 0 ? (
@@ -254,9 +324,9 @@ export function AdminLaporan() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-bold text-gray-400 tracking-wider font-mono">{report.nomorResi || report.id.substring(0,8)}</span>
                     <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{report.kategori_laporan?.namaKategori || '-'}</span>
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{report.kategori_laporan?.namaKategori || '-'}</span>
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
                     {report.judul}
                   </h3>
                   {report.lokasi && (
@@ -299,16 +369,32 @@ export function AdminLaporan() {
                 </div>
 
                 {/* Aksi */}
-                <div className="col-span-1 flex items-center justify-end mt-2 md:mt-0">
-                  <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+                <div className="col-span-1 flex items-center justify-end mt-2 md:mt-0 gap-1">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); router.push(`/laporan/${report.id}`); }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                    title="Lihat Detail"
+                  >
                     <Eye size={15} />
                   </button>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); openModal(report); }}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-600/10 transition"
-                    title="Ubah Status"
+                    onClick={(e) => { e.stopPropagation(); if (report.status !== 'ditolak') openModal(report); }}
+                    disabled={report.status === 'ditolak'}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${
+                      report.status === 'ditolak' 
+                        ? 'text-gray-300 cursor-not-allowed bg-transparent hover:bg-transparent' 
+                        : 'text-indigo-600 hover:bg-indigo-600/10'
+                    }`}
+                    title={report.status === 'ditolak' ? 'Laporan Ditolak (Terkunci)' : 'Ubah Status'}
                   >
                     <MoreHorizontal size={15} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setIsDeleteModalOpen(true); }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition"
+                    title="Hapus Laporan"
+                  >
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
@@ -366,7 +452,7 @@ export function AdminLaporan() {
                 <select 
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600/30 transition"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-600/30 transition"
                 >
                   <option value="pending">Menunggu</option>
                   <option value="diproses">Diproses</option>
@@ -377,6 +463,19 @@ export function AdminLaporan() {
                   Mengubah status ke <b>Diproses</b> berarti laporan mulai ditindaklanjuti.
                 </p>
               </div>
+              
+              {newStatus === 'ditolak' && (
+                <div className="animate-in fade-in slide-in-from-top-2">
+                  <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Alasan Penolakan <span className="text-rose-500">*</span></p>
+                  <textarea
+                    value={alasanPenolakan}
+                    onChange={(e) => setAlasanPenolakan(e.target.value)}
+                    placeholder="Berikan alasan mengapa laporan ini ditolak..."
+                    className="w-full h-24 bg-rose-50/50 border border-rose-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 placeholder:text-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400/50 transition resize-none"
+                    required
+                  ></textarea>
+                </div>
+              )}
             </div>
             <div className="p-4 border-t border-gray-50 flex justify-end gap-2 bg-gray-50/30">
               <Button 
@@ -389,10 +488,85 @@ export function AdminLaporan() {
               <Button 
                 onClick={handleUpdateStatus}
                 disabled={updating || selectedReport.status === newStatus}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm"
               >
                 {updating ? 'Menyimpan...' : 'Simpan Perubahan'}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hapus Laporan */}
+      {isDeleteModalOpen && selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-red-50/50">
+              <h3 className="font-bold text-red-700 flex items-center gap-2">
+                <Trash2 size={18} />
+                Hapus Laporan
+              </h3>
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-3 bg-red-50/50 rounded-xl p-3 border border-red-100">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm border border-red-50">
+                  <FileText size={16} className="text-red-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-red-500/70 uppercase tracking-wider mb-0.5">Laporan Terpilih</p>
+                  <p className="text-sm font-semibold text-gray-800 line-clamp-1">{selectedReport.judul}</p>
+                </div>
+              </div>
+
+              {/* Permission Check */}
+              {userSession?.role === 'admin' || userSession?.id === selectedReport?.users?.id ? (
+                <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Apakah Anda yakin ingin menghapus laporan ini secara permanen?
+                  </p>
+                  <p className="text-[11px] text-red-500 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100/50">
+                    ⚠️ Peringatan: Tindakan ini akan menghapus semua komentar, tanggapan, dan lampiran terkait. Data yang dihapus tidak dapat dipulihkan.
+                  </p>
+                </div>
+              ) : (
+                <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                  <p className="text-sm font-semibold text-red-650 bg-red-50 p-3.5 rounded-xl border border-red-100/50 text-center">
+                    Anda tidak memiliki izin untuk menghapus laporan ini.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-50 flex justify-end gap-2 bg-gray-50/50 mt-auto">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border border-transparent hover:border-gray-200"
+              >
+                {userSession?.role === 'admin' || userSession?.id === selectedReport?.users?.id ? 'Batal' : 'Tutup'}
+              </button>
+              {(userSession?.role === 'admin' || userSession?.id === selectedReport?.users?.id) && (
+                <button 
+                  onClick={handleDeleteReport}
+                  disabled={updating}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-sm shadow-red-200 transition-all disabled:opacity-50 flex items-center gap-2 active:scale-95"
+                >
+                  {updating ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Menghapus...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} /> Ya, Hapus Permanen
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
