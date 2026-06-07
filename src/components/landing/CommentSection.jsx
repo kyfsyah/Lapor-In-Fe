@@ -1,10 +1,10 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { Send, UserCircle2, Edit2, Trash2, X, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from 'react-hot-toast';
 
-export default function CommentSection({ laporanId }) {
+export default function CommentSection({ laporanId, status }) {
   const router = useRouter();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,12 +67,13 @@ export default function CommentSection({ laporanId }) {
       if (res.ok && result.success) {
         setComments([...comments, result.data]);
         setNewComment("");
+        toast.success("Komentar berhasil dikirim!");
       } else {
-        alert(result.message || "Gagal mengirim komentar");
+        toast.error(result.message || "Gagal mengirim komentar");
       }
     } catch (err) {
       console.error("Gagal mengirim komentar:", err);
-      alert("Terjadi kesalahan. Coba lagi.");
+      toast.error("Terjadi kesalahan. Coba lagi.");
     } finally {
       setSubmitting(false);
     }
@@ -91,13 +92,14 @@ export default function CommentSection({ laporanId }) {
 
       if (res.ok) {
         setComments(comments.filter(c => c.id !== commentId));
+        toast.success("Komentar berhasil dihapus!");
       } else {
         const result = await res.json();
-        alert(result.message || "Gagal menghapus komentar.");
+        toast.error(result.message || "Gagal menghapus komentar.");
       }
     } catch (err) {
       console.error("Gagal menghapus komentar:", err);
-      alert("Terjadi kesalahan sistem saat menghapus komentar.");
+      toast.error("Terjadi kesalahan sistem saat menghapus komentar.");
     }
   };
 
@@ -126,13 +128,14 @@ export default function CommentSection({ laporanId }) {
         const result = await res.json();
         setComments(comments.map(c => c.id === commentId ? { ...c, body: result.data.body } : c));
         cancelEdit();
+        toast.success("Komentar berhasil diperbarui!");
       } else {
         const result = await res.json();
-        alert(result.message || "Gagal mengedit komentar.");
+        toast.error(result.message || "Gagal mengedit komentar.");
       }
     } catch (err) {
       console.error("Gagal mengedit komentar:", err);
-      alert("Terjadi kesalahan sistem saat mengedit komentar.");
+      toast.error("Terjadi kesalahan sistem saat mengedit komentar.");
     }
   };
 
@@ -146,45 +149,55 @@ export default function CommentSection({ laporanId }) {
 
   return (
     <div className="bg-white">
-      
+
       {/* Area Input Komentar (Di atas, ala Reddit) */}
       <div className="p-4 sm:p-5 border-b border-gray-100">
         <h3 className="text-[15px] font-medium text-[#1c1c1c] mb-3">
           Sort by: <span className="font-bold cursor-pointer">Terbaru</span>
         </h3>
-        
+
         {user ? (
-          <form onSubmit={handlePostComment} className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Apa pendapat Anda?"
-                className="w-full bg-white border border-gray-300 rounded-[4px] px-4 py-2.5 text-[14px] text-[#1c1c1c] focus:outline-none focus:border-black resize-none min-h-[90px] transition-colors"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePostComment(e);
-                  }
-                }}
-              />
+          status === 'ditolak' ? (
+            <div className="flex items-center justify-between border border-red-200 rounded-xl p-3 bg-red-50 mb-3 animate-fade-in">
+              <p className="text-sm text-red-700 font-medium">Laporan ini telah ditolak. Kolom komentar ditutup.</p>
             </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={!newComment.trim() || submitting}
-                className="px-5 py-1.5 bg-black text-white text-sm font-bold rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors"
-              >
-                Komentar
-              </button>
+          ) : status === 'pending' && (user.role === 'admin' || user.role === 'petugas') ? (
+            <div className="flex items-center justify-between border border-amber-200 rounded-xl p-3 bg-amber-50 mb-3 animate-fade-in">
+              <p className="text-sm text-amber-700 font-medium">Ubah status laporan menjadi diproses terlebih dahulu untuk ikut berkomentar.</p>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handlePostComment} className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Apa pendapat Anda?"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1c1c] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent resize-none min-h-[90px] transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handlePostComment(e);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || submitting}
+                  className="px-5 py-1.5 bg-[#2563EB] text-white text-sm font-bold rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  Komentar
+                </button>
+              </div>
+            </form>
+          )
         ) : (
-          <div className="flex items-center justify-between border border-gray-300 rounded-[4px] p-3 bg-gray-50/50">
+          <div className="flex items-center justify-between border border-gray-100 rounded-xl p-3.5 bg-gray-50/50">
             <p className="text-sm text-gray-500 font-medium">Log in untuk berdiskusi</p>
-            <button 
-              onClick={() => router.push("/auth/login")}
-              className="px-5 py-1.5 border border-black text-black text-sm font-bold rounded-full hover:bg-gray-100 transition-colors"
+            <button
+              onClick={() => router.push("/login")}
+              className="px-5 py-1.5 border border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB]/10 text-sm font-bold rounded-full transition-colors"
             >
               Log In
             </button>
@@ -215,7 +228,7 @@ export default function CommentSection({ laporanId }) {
                   <div className="shrink-0 w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs uppercase mt-0.5">
                     {comment.users?.username?.charAt(0) || '?'}
                   </div>
-                  
+
                   {/* Isi Komentar */}
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-0.5">
@@ -236,14 +249,14 @@ export default function CommentSection({ laporanId }) {
                       {/* Aksi CRUD (Edit & Delete) */}
                       {isOwner && !isEditing && (
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
+                          <button
                             onClick={() => startEdit(comment)}
-                            className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                            className="text-gray-400 hover:text-[#2563EB] transition-colors p-1"
                             title="Edit Komentar"
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteComment(comment.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors p-1"
                             title="Hapus Komentar"
@@ -259,7 +272,7 @@ export default function CommentSection({ laporanId }) {
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-300 rounded-[4px] px-3 py-2 text-[14px] text-[#1c1c1c] focus:outline-none focus:border-blue-500 focus:bg-white resize-none min-h-[70px] transition-colors"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[14px] text-[#1c1c1c] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:bg-white resize-none min-h-[70px] transition-all"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -269,16 +282,16 @@ export default function CommentSection({ laporanId }) {
                           }}
                         />
                         <div className="flex justify-end gap-2">
-                          <button 
+                          <button
                             onClick={cancelEdit}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full hover:bg-gray-200 transition-colors"
+                            className="px-3 py-1.5 bg-gray-100 text-gray-655 text-xs font-bold rounded-full hover:bg-gray-200 transition-colors"
                           >
                             Batal
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleSaveEdit(comment.id)}
                             disabled={!editContent.trim()}
-                            className="px-3 py-1.5 bg-blue-500 text-white text-xs font-bold rounded-full hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                            className="px-3 py-1.5 bg-[#2563EB] text-white text-xs font-bold rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
                           >
                             Simpan
                           </button>
